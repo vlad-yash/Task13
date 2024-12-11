@@ -1,0 +1,32 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# This variable contains the shell script for installing dependencies
+$install_deps = <<-'SHELL'
+# TODO: your code here
+apt-get update -y        # Updates the package list
+apt-get install -y openjdk-17-jdk  # Installs OpenJDK 17
+SHELL
+
+Vagrant.configure("2") do |config|
+  # Specify the base box for the virtual machine
+  config.vm.box = "ubuntu/jammy64"  # Ubuntu 22.04 (Jammy) 64-bit box
+  config.vm.box_version = "20241002.0.0"  # Version of the box to use
+  # Configure the network settings for the VM
+  config.vm.network "private_network", ip: "192.168.100.100"  # Set up a private network with a static IP
+  
+  # Configure the virtual machine provider (in this case, VirtualBox)
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "4096"  # Allocate 4 GB of RAM to the VM
+    vb.cpus = "4"       # Assign 4 CPU cores to the VM
+  end
+  
+  # Provisioning step: run the shell script defined in $install_deps
+  config.vm.provision "shell", inline: $install_deps
+  
+  # Trigger after the VM is started: Modify the gradlew file and run the application
+  config.trigger.after :up do |trigger|
+    trigger.run_remote = {inline: "cd /vagrant && sed -i -e 's/\r$//' ./gradlew && ./gradlew bootRun"} 
+    # Change to the shared folder, fix line endings, and run the gradle bootRun task
+  end
+end
